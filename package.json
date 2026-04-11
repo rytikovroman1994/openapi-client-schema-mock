@@ -1,0 +1,62 @@
+{
+  "name": "openapi-client-schema-mock",
+  "version": "1.0.0",
+  "description": "CLI: OpenAPI, кодогенерация, проверка HTTP-доступа (только переменные окружения)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rytikovroman1994/openapi-client-schema-mock.git"
+  },
+  "bugs": {
+    "url": "https://github.com/rytikovroman1994/openapi-client-schema-mock/issues"
+  },
+  "homepage": "https://github.com/rytikovroman1994/openapi-client-schema-mock#readme",
+  "keywords": [
+    "openapi",
+    "swagger",
+    "cli",
+    "codegen",
+    "ajv",
+    "json-schema",
+    "typescript"
+  ],
+  "type": "module",
+  "bin": {
+    "ocsm": "./dist/cli.js"
+  },
+  "main": "./dist/cli.js",
+  "types": "./dist/cli.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/cli.d.ts",
+      "default": "./dist/cli.js"
+    },
+    "./create-validation.util": {
+      "types": "./dist/lib/create-validation.util.d.ts",
+      "default": "./dist/lib/create-validation.util.js"
+    }
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@faker-js/faker": "^9.9.0",
+    "@openapi-contrib/openapi-schema-to-json-schema": "^5.1.0",
+    "ajv": "^6.12.6",
+    "commander": "^12.1.0",
+    "dotenv": "^17.4.1"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "typescript": "^6.0.2"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
