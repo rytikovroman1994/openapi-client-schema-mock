@@ -7,7 +7,7 @@ export type DjangoFormLoginOptions = {
   remember?: boolean;
 };
 
-/** Ответ как у Playwright `APIResponse` (только используемые поля). */
+/** Минимальная форма HTTP GET-ответа (статус, тело текстом). */
 export type HttpGetResult = {
   ok(): boolean;
   status(): number;

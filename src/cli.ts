@@ -11,7 +11,7 @@ const program = new Command();
 program
   .name('ocsm')
   .description('OpenAPI, кодогенерация (настройка через переменные окружения)')
-  .version('1.0.0');
+  .version('1.1.0');
 
 const codegen = program.command('codegen').description('Генерация кода');
 

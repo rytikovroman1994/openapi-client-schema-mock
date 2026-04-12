@@ -1,6 +1,6 @@
 {
   "name": "openapi-client-schema-mock",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "CLI: OpenAPI, кодогенерация, проверка HTTP-доступа (только переменные окружения)",
   "license": "MIT",
   "repository": {
@@ -22,7 +22,7 @@
   ],
   "type": "module",
   "bin": {
-    "ocsm": "./dist/cli.js"
+    "ocsm": "dist/cli.js"
   },
   "main": "./dist/cli.js",
   "types": "./dist/cli.d.ts",
@@ -42,7 +42,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && node --input-type=module -e \"import { chmodSync } from 'node:fs'; chmodSync('dist/cli.js', 0o755)\"",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {

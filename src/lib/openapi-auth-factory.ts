@@ -14,10 +14,10 @@ export type OpenApiAuthKind = 'django-session' | 'bearer' | 'cookie' | 'anonymou
 
 /**
  * Какой клиент использовать при скачивании OpenAPI (`codegen client` / `codegen schemas`).
- * `SFIN_OPENAPI_AUTH=auto` (по умолчанию): bearer → cookie → django-session → anonymous.
+ * `OPENAPI_AUTH=auto` (по умолчанию): bearer → cookie → django-session → anonymous.
  */
 export function resolvedOpenApiAuthKind(): OpenApiAuthKind {
-  const explicit = process.env.SFIN_OPENAPI_AUTH?.trim().toLowerCase();
+  const explicit = process.env.OPENAPI_AUTH?.trim().toLowerCase();
   if (explicit === 'django' || explicit === 'django-session') {
     return 'django-session';
   }
@@ -32,7 +32,7 @@ export function resolvedOpenApiAuthKind(): OpenApiAuthKind {
   }
   if (explicit && explicit !== 'auto') {
     throw new Error(
-      `Неизвестный SFIN_OPENAPI_AUTH=${explicit}. Допустимо: auto, django-session, bearer, cookie, anonymous`,
+      `Неизвестный OPENAPI_AUTH=${explicit}. Допустимо: auto, django-session, bearer, cookie, anonymous`,
     );
   }
   if (process.env.OPENAPI_BEARER_TOKEN?.trim() || process.env.AUTH_ACCESS_TOKEN?.trim()) {
