@@ -11,6 +11,9 @@ const LOCAL_AJV_UTIL_IMPORT = '../src/utils/ajv-schemas.util';
 
 type OpenApiDoc = {
   paths?: Record<string, Record<string, unknown>>;
+  components?: {
+    schemas?: Record<string, unknown>;
+  };
 };
 
 type MediaTypeObject = { schema?: Record<string, unknown> };
@@ -64,6 +67,65 @@ function tryConvertSchema(
   } catch {
     return schema;
   }
+}
+
+function decodePointerToken(token: string): string {
+  return token.replace(/~1/g, '/').replace(/~0/g, '~');
+}
+
+function getByJsonPointer(root: unknown, ref: string): unknown {
+  if (!ref.startsWith('#/')) {
+    return undefined;
+  }
+  const parts = ref.slice(2).split('/').map(decodePointerToken);
+  let cursor: unknown = root;
+  for (const part of parts) {
+    if (!cursor || typeof cursor !== 'object') {
+      return undefined;
+    }
+    cursor = (cursor as Record<string, unknown>)[part];
+  }
+  return cursor;
+}
+
+function resolveInternalRefs(
+  value: unknown,
+  root: OpenApiDoc,
+  stack: Set<string> = new Set(),
+): unknown {
+  if (value === null || typeof value !== 'object') {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => resolveInternalRefs(item, root, stack));
+  }
+
+  const obj = value as Record<string, unknown>;
+  const ref = typeof obj.$ref === 'string' ? obj.$ref : undefined;
+
+  if (ref?.startsWith('#/')) {
+    if (stack.has(ref)) {
+      return {};
+    }
+
+    const target = getByJsonPointer(root, ref);
+    if (!target || typeof target !== 'object') {
+      return {};
+    }
+
+    const { $ref: _ignoredRef, ...rest } = obj;
+    const merged = { ...(target as Record<string, unknown>), ...rest };
+    const nextStack = new Set(stack);
+    nextStack.add(ref);
+    return resolveInternalRefs(merged, root, nextStack);
+  }
+
+  const resolved: Record<string, unknown> = {};
+  Object.entries(obj).forEach(([key, val]) => {
+    resolved[key] = resolveInternalRefs(val, root, stack);
+  });
+  return resolved;
 }
 
 function parametersToJsonSchema(
@@ -235,18 +297,27 @@ function collectSchemaFunctions(api: OpenApiDoc): GeneratedSchemaFn[] {
       const uniqueId = count > 1 ? `${baseId}_${count}` : baseId;
 
       const requestBodyMedia = pickJsonMediaContent(op.requestBody?.content);
-      const requestBodySchema = requestBodyMedia?.schema
+      const requestBodySchemaRaw = requestBodyMedia?.schema
         ? tryConvertSchema(requestBodyMedia.schema as Record<string, unknown>)
         : undefined;
+      const requestBodySchema = requestBodySchemaRaw
+        ? (resolveInternalRefs(requestBodySchemaRaw, api) as Record<string, unknown>)
+        : undefined;
 
-      const parametersSchema = parametersToJsonSchema(op.parameters);
+      const parametersSchemaRaw = parametersToJsonSchema(op.parameters);
+      const parametersSchema = parametersSchemaRaw
+        ? (resolveInternalRefs(parametersSchemaRaw, api) as Record<string, unknown>)
+        : undefined;
 
       const responses: Record<string, Record<string, unknown>> = {};
       if (op.responses) {
         Object.entries(op.responses).forEach(([status, resp]) => {
           const media = pickJsonMediaContent((resp as ResponseObject).content);
-          const sch = media?.schema
+          const schRaw = media?.schema
             ? tryConvertSchema(media.schema as Record<string, unknown>)
+            : undefined;
+          const sch = schRaw
+            ? (resolveInternalRefs(schRaw, api) as Record<string, unknown>)
             : undefined;
           if (sch) {
             responses[status] = sch;
@@ -320,7 +391,7 @@ export async function runGenerateSchemasFile(cwd: string): Promise<void> {
 
   const blocks = fns.map(({ exportName, commentLines, schema }) => {
     const comment = ['/**', ...commentLines, ' */'].join('\n');
-    const literal = schemaToTsObjectLiteral(schema, 0);
+    const literal = JSON.stringify(schema, null, 2);
     const body = `${comment}
 export const ${exportName} = (data: any) => ajv.compile(${literal})(data);
 `;
