@@ -5,8 +5,9 @@ import { openapiSchemaToJsonSchema } from '@openapi-contrib/openapi-schema-to-js
 
 const HTTP_METHODS = ['get', 'post', 'put', 'patch', 'delete', 'options', 'head', 'trace'] as const;
 
-/** Пакет с `ajvForSchemas` для импорта в сгенерированном `schemas.ts`. */
-const AJV_MODULE_SPEC = 'openapi-client-schema-mock/create-validation.util';
+/** Локальный helper AJV, который пишется в проект-потребитель. */
+const LOCAL_AJV_UTIL_PATH = ['src', 'utils', 'ajv-schemas.util.ts'];
+const LOCAL_AJV_UTIL_IMPORT = '../src/utils/ajv-schemas.util';
 
 type OpenApiDoc = {
   paths?: Record<string, Record<string, unknown>>;
@@ -311,6 +312,7 @@ function collectSchemaFunctions(api: OpenApiDoc): GeneratedSchemaFn[] {
 export async function runGenerateSchemasFile(cwd: string): Promise<void> {
   const inputPath = path.join(cwd, 'generated', 'openapi.json');
   const outFile = path.join(cwd, 'generated', 'schemas.ts');
+  const ajvUtilFile = path.join(cwd, ...LOCAL_AJV_UTIL_PATH);
 
   const raw = await fs.readFile(inputPath, 'utf8');
   const api = JSON.parse(raw) as OpenApiDoc;
@@ -330,14 +332,29 @@ export const ${exportName} = (data: any) => ajv.compile(${literal})(data);
 // @ts-nocheck
 /*
  * Generated from generated/openapi.json — по одной AJV-функции на схему (request / parameters / response).
- * Импорт экземпляра AJV из пакета CLI.
+ * Импорт экземпляра AJV из локального helper-файла.
  */
 
-import { ajvForSchemas as ajv } from '${AJV_MODULE_SPEC}';
+import { ajvForSchemas as ajv } from '${LOCAL_AJV_UTIL_IMPORT}';
 
 ${blocks.join('\n')}
 `;
 
+  const ajvUtilContent = `import Ajv from 'ajv';
+
+/**
+ * Общий экземпляр AJV для валидации схем из generated/schemas.ts.
+ */
+export const ajvForSchemas = new Ajv({
+  allErrors: true,
+  validateSchema: false,
+  unknownFormats: 'ignore',
+});
+`;
+
+  await fs.mkdir(path.dirname(ajvUtilFile), { recursive: true });
+  await fs.writeFile(ajvUtilFile, ajvUtilContent, 'utf8');
   await fs.writeFile(outFile, file, 'utf8');
+  console.log(`Записан ${ajvUtilFile}`);
   console.log(`Записан ${outFile} (${fns.length} схем-функций)`);
 }

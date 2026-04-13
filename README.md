@@ -115,7 +115,7 @@ Minimal scripts in a test or app repo:
     "generate:mocks": "ocsm codegen mocks ./src/test-data/dto"
   },
   "devDependencies": {
-    "openapi-client-schema-mock": "^1.1.0",
+    "openapi-client-schema-mock": "^1.1.1",
     "swagger-typescript-api": "^13.6.0"
   }
 }
