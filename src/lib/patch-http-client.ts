@@ -4,14 +4,13 @@ import path from 'node:path';
 const SET_HEADER_MARKER = 'public setHeader(name: string, value: string): void';
 
 const HTTP_CLIENT_SNIPPET = `
-    public setHeader(name: string, value: string): void {
-        this.instance.defaults.headers[name] = value;
-    }
+  public setHeader(name: string, value: string): void {
+    this.instance.defaults.headers[name] = value;
+  }
 
-    public removeHeader(name: string): void {
-        delete this.instance.defaults.headers[name];
-    }
-
+  public removeHeader(name: string): void {
+    delete this.instance.defaults.headers[name];
+  }
 `;
 
 /**
@@ -27,7 +26,7 @@ export async function patchGeneratedHttpClient(cwd: string): Promise<void> {
   }
 
   const anchor =
-    /(\r?\n    public setSecurityData = \(data: SecurityDataType \| null\) => \{\r?\n        this\.securityData = data\r?\n    \})\r?\n(\r?\n    protected mergeRequestParams)/;
+    /(public setSecurityData\s*=\s*\(data:\s*SecurityDataType\s*\|\s*null\)\s*=>\s*\{[\s\S]*?\}\s*;?)(\r?\n\s*protected mergeRequestParams)/m;
 
   if (!anchor.test(content)) {
     throw new Error(
